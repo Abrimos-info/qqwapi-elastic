@@ -28,6 +28,12 @@ async function createServer() {
         return next();
     });
 
+    // Serve robots.txt that blocks all indexing
+    app.get('/robots.txt', (req, res) => {
+        res.type('text/plain');
+        res.send('User-agent: *\nDisallow: /');
+    });
+
     // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
     const options = {
         controllers: path.resolve(__dirname, './controllers'),
