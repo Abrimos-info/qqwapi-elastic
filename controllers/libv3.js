@@ -1157,31 +1157,13 @@ async function search(index, params, prefix, debug) {
   };
 
   //This is the case for CSV with dataformat plugin
+  // Disabled: dataformat extension not available on this server
+  // Always return JSON format
   if (params.query.format) {
-    const searchDocumentDataformat = {
-      index: searchDocument.index,
-      querystring: {
-        format: params.query.format,
-      },
-      body: searchDocument.body,
-      context: params,
-    };
-
-    if (debug) {
-      console.log("search resultDataformat", searchDocumentDataformat);
-    }
-
-    try {
-      let resultDataformat = await client.dataformat(
-        searchDocumentDataformat,
-        {},
-        debug,
-      );
-      // resultDataformat.body = client.serializer.deserialize(resultDataformat.body);
-      return resultDataformat;
-    } catch (e) {
-      return { error: e, body: e.meta && e.meta.body ? e.meta.body.error : {} };
-    }
+    console.log(
+      "CSV/Excel export requested but not available - returning JSON instead",
+    );
+    // Continue with normal JSON search below
   }
 
   // console.log(index);
@@ -1302,73 +1284,8 @@ function prepareOutput(body, context, debug) {
     console.log("prepareOutput", JSON.stringify(context.params, body, 10));
   }
 
-  //This case is for dataformat extension
-  if (context.params.query.format) {
-    const filename =
-      "qqw" +
-      context.req.url
-        .replace(/\//g, "_")
-        .replace(/\?/g, "_")
-        .replace(/&/g, "_") +
-      "." +
-      context.params.query.format;
-
-    if (body.body.root_cause) {
-      console.log("prepareOutput dataformat error", body.body.root_cause);
-    }
-
-    if (context.params.query.format == "csv") {
-      if (body.headers) {
-        const headerKeys = Object.keys(body.headers);
-        for (header in headerKeys) {
-          context.res.set(headerKeys[header], body.headers[headerKeys[header]]);
-        }
-
-        context.res
-          .status(body.statusCode)
-          .header(
-            "content-disposition",
-            'attachment; filename="' + filename + '"',
-          )
-          .setBody(body.body);
-      } else {
-        console.error("CSV with no headers", body);
-        return "API Error: " + body.body;
-      }
-    }
-
-    if (
-      context.params.query.format == "xlsx" ||
-      context.params.query.format == "xls"
-    ) {
-      if (body.error) {
-        console.log("prepareOutput xls/xlsx error", body.error);
-        body.statusCode = 500;
-      }
-      console.log(body);
-
-      //esto está bueno porque le pone el content-type adecuado y el content-length tambien, pero tira errores de headers
-      // context.origRes
-      //   .status(body.statusCode)
-      //   .attachment(filename)
-      //   .type(context.params.query.format)
-      //   .set('Content-Transfer-Encoding','binary')
-      // .send(body.body)
-      // .end();
-
-      context.res
-        .set("content-type", "application/octet-stream; charset=binary")
-        .set("Content-Transfer-Encoding", "binary")
-        .set("Content-Length", body.body.length)
-        .set("content-disposition", 'attachment; filename="' + filename + '"')
-        .status(body.statusCode)
-        .setBody(body.body);
-
-      console.log(context.res.getHeaders());
-    }
-
-    return;
-  }
+  // CSV/Excel export disabled - dataformat extension not available
+  // Format parameter is ignored, always return JSON
 
   // Case for Contracts - they have a different structure and their length comes in the third item in the array
   if (bodyhits && !bodyhits.error) {
@@ -1656,36 +1573,38 @@ function elastic_test(retry = 0) {
 }
 
 //MAIN
-client.extend("dataformat", ({ makeRequest, ConfigurationError }) => {
-  return function dataformat(params, options, debug) {
-    // build request object
-    const request = {
-      method: params.method || "GET",
-      path: `/${encodeURIComponent(params.index)}/_data`, //format=${encodeURIComponent(params.querystring.format)}&source_content_type=application/json&source=${encodeURIComponent(JSON.stringify(params.querystring.source))}
-      querystring: {
-        format: params.querystring.format,
-        source_content_type: "application/json",
-        source: JSON.stringify(params.body),
-      },
-      context: params.context,
-    };
-
-    // build request options object
-    const requestOptions = {
-      ignore: options.ignore || null,
-      requestTimeout: options.requestTimeout || null,
-      maxRetries: options.maxRetries || null,
-      asStream: options.asStream || false,
-      headers: options.headers || null,
-    };
-
-    if (debug) {
-      console.log("makeRequest", request, requestOptions);
-    }
-
-    return makeRequest(request, requestOptions);
-  };
-});
+// Dataformat extension disabled - not available on this server
+// CSV/Excel export functionality is not supported
+// client.extend("dataformat", ({ makeRequest, ConfigurationError }) => {
+//   return function dataformat(params, options, debug) {
+//     // build request object
+//     const request = {
+//       method: params.method || "GET",
+//       path: `/${encodeURIComponent(params.index)}/_data`,
+//       querystring: {
+//         format: params.querystring.format,
+//         source_content_type: "application/json",
+//         source: JSON.stringify(params.body),
+//       },
+//       context: params.context,
+//     };
+//
+//     // build request options object
+//     const requestOptions = {
+//       ignore: options.ignore || null,
+//       requestTimeout: options.requestTimeout || null,
+//       maxRetries: options.maxRetries || null,
+//       asStream: options.asStream || false,
+//       headers: options.headers || null,
+//     };
+//
+//     if (debug) {
+//       console.log("makeRequest", request, requestOptions);
+//     }
+//
+//     return makeRequest(request, requestOptions);
+//   };
+// });
 
 elastic_test();
 
