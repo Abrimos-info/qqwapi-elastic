@@ -1448,8 +1448,13 @@ function formatSummary(aggs, debug) {
                 cleanedKey = cleanedKey.substring(4);
               }
 
+              //Remove qqw_ suffix from index names (edge case).
+              if (cleanedKey && cleanedKey.endsWith("qqw_")) {
+                cleanedKey = cleanedKey.substring(0, cleanedKey.length - 4);
+              }
+
               //Remove date suffix from index names (_YYYY-MM-DD at end).
-              if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(cleanedKey)) {
+              if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(cleanedKey)) {
                 cleanedKey = cleanedKey.substr(0, cleanedKey.length - 11);
               }
 
