@@ -1434,14 +1434,14 @@ function formatSummary(aggs, debug) {
           } else {
             // console.log("formatSummary bucked", bucket)
 
-            //Remove date from index names.
-            if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(bucket.key)) {
-              bucket.key = bucket.key.substr(0, bucket.key.length - 11);
-            }
-
             //Remove qqw_ prefix from index names.
             if (bucket.key && bucket.key.indexOf("qqw_") == 0) {
               bucket.key = bucket.key.substring(4);
+            }
+
+            //Remove date suffix from index names (_YYYY-MM-DD at end).
+            if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(bucket.key)) {
+              bucket.key = bucket.key.substr(0, bucket.key.length - 11);
             }
 
             summary[key][bucket.key_as_string || bucket.key] = bucket.doc_count;
