@@ -1210,6 +1210,35 @@ async function search(index, params, prefix, debug) {
       const result = await client.search(searchDocument);
       return result.body;
     } catch (e) {
+      // Log detailed error information for debugging
+      if (e.meta && e.meta.body && e.meta.body.error) {
+        const errorDetails = e.meta.body.error;
+        console.error("Search error in index:", index);
+        console.error("Error type:", errorDetails.type);
+        console.error("Error reason:", errorDetails.reason);
+
+        // If it's a sort error, retry without sorting
+        if (
+          errorDetails.reason &&
+          errorDetails.reason.includes("in order to sort on")
+        ) {
+          console.error(
+            "Sort fields attempted:",
+            JSON.stringify(searchDocument.body.sort),
+          );
+          console.log("Retrying search without sort...");
+
+          // Remove sort and retry
+          searchDocument.body.sort = [];
+          try {
+            const retryResult = await client.search(searchDocument);
+            return retryResult.body;
+          } catch (retryError) {
+            console.error("Retry also failed:", retryError.message);
+            return { error: retryError };
+          }
+        }
+      }
       return { error: e };
     }
   } else {
