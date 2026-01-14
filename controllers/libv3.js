@@ -1348,7 +1348,6 @@ function prepareOutput(body, context, debug) {
     data = bodyhits.hits.map((o) => {
       //Add index to results
       o._source.type = get_db_type(o._index);
-      o._source._index = o._index;
       return o._source;
     });
     size = data.length;
@@ -1438,44 +1437,22 @@ function formatSummary(aggs, debug) {
           } else {
             // console.log("formatSummary bucked", bucket)
 
-            // For the "type" aggregation, preserve raw index names
-            if (key === "type") {
-              const rawIndexName = bucket.key;
-              let cleanedKey = bucket.key;
-
-              //Remove qqw_ prefix from index names.
-              if (cleanedKey && cleanedKey.indexOf("qqw_") == 0) {
-                cleanedKey = cleanedKey.substring(4);
-              }
-
-              //Remove qqw_ suffix from index names (edge case).
-              if (cleanedKey && cleanedKey.endsWith("qqw_")) {
-                cleanedKey = cleanedKey.substring(0, cleanedKey.length - 4);
-              }
-
-              //Remove date suffix from index names (_YYYY-MM-DD at end).
-              if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(cleanedKey)) {
-                cleanedKey = cleanedKey.substr(0, cleanedKey.length - 11);
-              }
-
-              summary[key][cleanedKey] = {
-                count: bucket.doc_count,
-                _index: rawIndexName,
-              };
-            } else {
-              //Remove qqw_ prefix from index names.
-              if (bucket.key && bucket.key.indexOf("qqw_") == 0) {
-                bucket.key = bucket.key.substring(4);
-              }
-
-              //Remove date suffix from index names (_YYYY-MM-DD at end).
-              if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(bucket.key)) {
-                bucket.key = bucket.key.substr(0, bucket.key.length - 11);
-              }
-
-              summary[key][bucket.key_as_string || bucket.key] =
-                bucket.doc_count;
+            //Remove qqw_ prefix from index names.
+            if (bucket.key && bucket.key.indexOf("qqw_") == 0) {
+              bucket.key = bucket.key.substring(4);
             }
+
+            //Remove qqw_ suffix from index names (edge case).
+            if (bucket.key && bucket.key.endsWith("qqw_")) {
+              bucket.key = bucket.key.substring(0, bucket.key.length - 4);
+            }
+
+            //Remove date suffix from index names (_YYYY-MM-DD at end).
+            if (/(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(bucket.key)) {
+              bucket.key = bucket.key.substr(0, bucket.key.length - 11);
+            }
+
+            summary[key][bucket.key_as_string || bucket.key] = bucket.doc_count;
           }
         }
       }
