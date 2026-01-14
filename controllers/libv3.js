@@ -1199,11 +1199,26 @@ async function search(index, params, prefix, debug) {
         console.error("Error type:", errorDetails.type);
         console.error("Error reason:", errorDetails.reason);
 
-        // If it's a sort error, retry without sorting
+        // Check if it's a sort error (either in main reason or root_cause)
+        let isSortError = false;
         if (
           errorDetails.reason &&
           errorDetails.reason.includes("in order to sort on")
         ) {
+          isSortError = true;
+        }
+        // Also check root_cause array for sort errors
+        if (errorDetails.root_cause && Array.isArray(errorDetails.root_cause)) {
+          for (let cause of errorDetails.root_cause) {
+            if (cause.reason && cause.reason.includes("in order to sort on")) {
+              isSortError = true;
+              break;
+            }
+          }
+        }
+
+        // If it's a sort error, retry without sorting
+        if (isSortError) {
           console.error(
             "Sort fields attempted:",
             JSON.stringify(searchDocument.body.sort),
